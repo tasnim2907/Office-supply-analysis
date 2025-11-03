@@ -1,0 +1,45 @@
+-- 1. For every customer that bought Stapler, list their total spend on products excluding Stapler.
+
+select 
+  customer_id, sum(revenue)
+from purchases
+where customer_id in 
+  (select distinct customer_id
+  from purchases
+  where product = 'Stapler')
+and product <> 'Stapler'
+group by customer_id
+order by customer_id;
+
+-- 2. Identify the top 3 products by revenue over the last 12 months.
+
+select product, sum(revenue) as total_sale
+from purchases
+where purchase_date >= current_date - interval 12 month
+
+group by product
+order by total_sale desc
+limit 3;
+
+-- 3. Find the percentage change in monthly active users compared to the previous month.
+
+with monthly as
+( select
+    date_format(usage_date, '%m') as month,
+    count(distinct user_id) as mau
+  from app_usage
+  group by month
+  order by month)
+  
+select 
+  m1.month,
+  m1.mau as current_month_users,
+  m2.mau as previous_month_users,
+  round
+    (100.0 * (m1.mau - m2.mau) / nullif(m2.mau, 0), 2)
+    as mom_growth_percent
+from monthly m1
+
+left join monthly m2
+  on m1.month = date_format(date_sub(concat(m1.month, '-01'), interval 1 month), '%m')
+order by m1.month;
