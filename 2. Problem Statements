@@ -1,0 +1,10 @@
+1. For every customer that bought a Stapler, list their total spend on products excluding Stapler.
+2. Identify the top 3 office-supply products by revenue over the last 12 months.
+3. Find the percentage change in monthly active users for Notepad compared to the previous month.
+4. Retrieve the names of enterprise customers whose average spend per purchase on Bulk Binder Pack is at least $500.
+5. List customers who bought both Highlighter and Ballpoint Pen, but never bought Bulk Binder Pack.
+6. Show the average session duration for Stapler by user location (country).
+7. For each product, calculate retention rate for users after 30 days of sign-up.
+8.Find the median subscription value across all office-supply memberships.
+9. List all customers who’ve upgraded from any Single Item plan to the All Tools plan within the last year.
+10. Count the number of support tickets raised per product in Q3, highlighting those with over 20% increase over Q2.
