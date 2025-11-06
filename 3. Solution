@@ -1,0 +1,143 @@
+-- 1. For every customer that bought a Stapler, list their total spend on products excluding Stapler.
+
+select 
+	c.customer_id, c.customer_name, sum(p.revenue) as total_spend
+from purchases p 
+join customers c 
+on p.customer_id = c.customer_id
+
+where c.customer_id in
+	(select distinct customer_id from purchases
+	where product = 'Stapler')
+and product <> 'Stapler'
+group by customer_id
+order by customer_id;
+
+-- 2. Identify the top 3 office-supply products by revenue over the last 12 months.
+
+select 
+	product, sum(revenue) as total
+from purchases
+where purchase_date >= current_date - interval 12 month
+group by product
+order by total desc
+limit 3;
+
+-- 3. Find the percentage change in monthly active users for Notepad compared to the previous month.
+
+with monthly as
+(select
+    date_format(purchase_date, '%m') as month,
+    count(distinct user_id) as mau
+  from purchases
+  group by month
+  order by month)
+
+select 
+  m1.month,
+  m1.mau as current_month_users,
+  m2.mau as previous_month_users,
+  round
+    (100.0 * (m1.mau - m2.mau) / nullif(m2.mau, 0), 2)
+    as mom_growth_percent
+from monthly m1
+
+left join monthly m2
+  on m1.month = date_format(date_sub(concat(m1.month, '-01'), interval 1 month), '%m')
+order by m1.month;
+
+-- 4. Retrieve the names of enterprise customers whose average spend per purchase on Bulk Binder Pack is at least $500.
+
+-- with customer_name
+select 
+	c.customer_name, p.customer_id, avg(p.revenue) as avg_spent
+from purchases p
+left join customers c
+on p.customer_id = c.customer_id
+
+where p.product = 'Bulk Binder Pack'
+group by c.customer_name, p.customer_id
+having avg_spent >= 500;
+
+-- without customer_name
+select 
+	customer_id, avg(revenue) as avg_spent
+from purchases
+where product = 'Bulk Binder Pack'
+group by customer_id
+having avg_spent >= 500;
+
+-- 5. List customers who bought both Highlighter and Ballpoint Pen, but never bought Bulk Binder Pack.
+
+select 
+	customer_id 
+from purchases
+group by customer_id
+having
+	sum(case when product = 'Highlighter' then 1 else 0 end) > 0
+	and sum(case when product = 'Ballpoint Pen' then 1 else 0 end) > 0
+	and sum(case when product = 'Bulk Binder Pack' then 1 else 0 end) = 0;
+    
+-- 6. Show the average session duration for Stapler by user location (country).
+
+select * from sessions;
+select * from users;
+
+select 
+	u.country, avg(s.session_duration) as avg_duration
+from users u 
+join sessions s 
+on u.user_id = s.user_id
+where s.product = 'Stapler'
+group by u.country;
+
+-- 7. For each product, calculate retention rate for users after 30 days of sign-up.
+
+select 
+	p.product,
+    count(distinct case when u.signup_date + interval 30 day <= u.last_login then u.user_id end) * 100.0
+    / count(distinct u.user_id) as retention_30_days
+from users u
+join purchases p on u.user_id = p.user_id
+group by p.product
+order by retention_30_days desc;
+
+-- 8.Find the median subscription value across all office-supply memberships.
+
+WITH ordered AS (
+  SELECT
+    subscription_value,
+    ROW_NUMBER() OVER (ORDER BY subscription_value) AS rn,
+    COUNT(*) OVER () AS cnt
+  FROM subscriptions
+)
+SELECT AVG(subscription_value) AS median
+FROM ordered
+WHERE rn IN ((cnt+1) DIV 2 , (cnt+2) DIV 2);
+
+-- 9. List all customers who’ve upgraded from any Single Item plan to the All Tools plan within the last year.
+
+SELECT DISTINCT s1.user_id
+FROM subscriptions s1
+JOIN subscriptions s2
+ON s1.user_id = s2.user_id
+WHERE s1.plan_type LIKE '%Single Item%'
+AND s2.plan_type = 'All Tools'
+AND s2.start_date > s1.start_date
+AND s2.start_date >= CURRENT_DATE - INTERVAL 1 year;
+
+-- 10. Count the number of support tickets raised per product in Q3, highlighting those with over 20% increase over Q2.
+
+select 
+	product,
+    sum(created_at >= '2025-04-01' and created_at < '2025-07-01') as Q2_count,
+    sum(created_at  >= '2025-07-01' and created_at < '2025-10-01') as Q3_count,
+    100.0 * (sum(created_at  >= '2025-07-01' and created_at < '2025-10-01')
+			-sum(created_at >= '2025-04-01' and created_at < '2025-07-01'))
+		/ nullif(sum(created_at >= '2025-04-01' and created_at < '2025-07-01'), 0) as pct_increase
+from support_tickets
+
+where created_at >= '2025-04-01' and created_at < '2025-10-01'
+group by product
+having Q2_count > 0 and (Q3_count - Q2_count) / Q2_count > 0.20
+order by pct_increase desc;
