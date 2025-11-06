@@ -1,0 +1,146 @@
+-- 1) Customers
+CREATE TABLE customers (
+  customer_id       SERIAL PRIMARY KEY,
+  customer_name     VARCHAR(100) NOT NULL,
+  customer_type     VARCHAR(30)  NOT NULL,
+  country           VARCHAR(50)  NOT NULL
+);
+
+-- 2) Users (end users under a customer account)
+CREATE TABLE users (
+  user_id           SERIAL PRIMARY KEY,
+  customer_id       INT REFERENCES customers(customer_id),
+  country           VARCHAR(50)  NOT NULL,
+  signup_date       DATE         NOT NULL,
+  last_login        DATE         NULL
+);
+
+-- 3) Purchases
+CREATE TABLE purchases (
+  purchase_id       SERIAL PRIMARY KEY,
+  customer_id       INT REFERENCES customers(customer_id),
+  user_id           INT REFERENCES users(user_id),
+  product           VARCHAR(80)  NOT NULL,
+  product_group     VARCHAR(80)  NOT NULL,
+  purchase_date     DATE         NOT NULL,
+  revenue           NUMERIC(10,2) NOT NULL
+);
+
+-- 4) Sessions (site/app browsing/engagement sessions)
+CREATE TABLE sessions (
+  session_id        SERIAL PRIMARY KEY,
+  user_id           INT REFERENCES users(user_id),
+  product           VARCHAR(80)  NOT NULL,
+  session_start     TIMESTAMP    NOT NULL,
+  session_duration  INT          NOT NULL
+);
+
+-- 5) Subscriptions
+CREATE TABLE subscriptions (
+  subscription_id    SERIAL PRIMARY KEY,
+  user_id            INT REFERENCES users(user_id),
+  product            VARCHAR(80)  NOT NULL,
+  plan_type          VARCHAR(80)  NOT NULL,
+  start_date         DATE         NOT NULL,
+  expiry_date        DATE         NULL,
+  cancelled_date     DATE         NULL,
+  subscription_value NUMERIC(10,2) NOT NULL
+);
+
+-- 6) Support tickets
+CREATE TABLE support_tickets (
+  ticket_id       BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  product         VARCHAR(80)  NOT NULL,
+  created_at      TIMESTAMP    NOT NULL,
+  priority        VARCHAR(20)  NOT NULL,
+  resolution_hours INT         NOT NULL
+);
+
+-- Customers
+INSERT INTO customers (customer_name, customer_type, country) VALUES
+('Acme Corp',        'enterprise', 'US'),
+('NorthLeaf Ltd',    'enterprise', 'CA'),
+('PaperTrail Inc',   'enterprise', 'UK'),
+('BrightStation',    'individual', 'US'),
+('NoteNest',         'individual', 'IN'),
+('BinderWorks',      'enterprise', 'US'),
+('Staple&Co',        'individual', 'CA'),
+('HighlightMe',      'individual', 'UK');
+
+-- Users
+INSERT INTO users (customer_id, country, signup_date, last_login) VALUES
+(1, 'US', '2024-06-10', '2025-10-01'),
+(1, 'US', '2024-12-05', '2025-10-10'),
+(2, 'CA', '2025-01-15', '2025-10-05'),
+(3, 'UK', '2025-03-01', '2025-09-15'),
+(4, 'US', '2025-02-20', '2025-02-21'),
+(5, 'IN', '2025-04-12', '2025-05-20'),
+(6, 'US', '2024-11-25', '2025-11-01'),
+(7, 'CA', '2025-01-02', '2025-01-15'),
+(8, 'UK', '2025-05-01', NULL);
+
+-- Purchases
+INSERT INTO purchases (customer_id, user_id, product, product_group, purchase_date, revenue) VALUES
+(1, 1, 'Stapler', 'Office Tools', '2025-01-10', 35.00),
+(2, 3, 'Stapler', 'Office Tools', '2025-03-22', 25.00),
+(4, 5, 'Stapler', 'Office Tools', '2025-02-02', 29.00),
+(1, 1, 'Notepad',        'Office Tools', '2025-01-11', 10.00),
+(1, 1, 'Highlighter',    'Office Tools', '2025-04-01', 7.00),
+(1, 2, 'Binder',         'Office Tools', '2025-06-15', 15.00),
+(1, 1, 'Ballpoint Pen',  'Office Tools', '2025-08-09', 6.00),
+(2, 3, 'Notepad',        'Office Tools', '2025-03-23', 10.00),
+(2, 3, 'Highlighter',    'Office Tools', '2025-07-14', 12.00),
+(2, 3, 'Binder',         'Office Tools', '2025-09-21', 20.00),
+(3, 4, 'Ballpoint Pen',  'Office Tools', '2025-07-03', 5.00),
+(3, 4, 'Highlighter',    'Office Tools', '2025-07-05', 9.00),
+(1, 1, 'Bulk Binder Pack', 'Office Tools', '2025-05-10', 600.00),
+(2, 3, 'Bulk Binder Pack', 'Office Tools', '2025-06-18', 520.00),
+(2, 3, 'Bulk Binder Pack', 'Office Tools', '2025-10-03', 480.00),
+(6, 7, 'Highlighter', 'Office Tools', '2025-05-02', 9.00),
+(6, 7, 'Binder',      'Office Tools', '2025-05-03', 18.00),
+(7, 8, 'Highlighter', 'Office Tools', '2025-01-06', 7.00),
+(7, 8, 'Binder',      'Office Tools', '2025-02-06', 14.00),
+(7, 8, 'Ballpoint Pen','Office Tools','2025-02-10', 4.00),
+(1, 1, 'Notepad', 'Office Tools', '2024-08-01', 9.00),
+(2, 3, 'Binder',  'Office Tools', '2024-09-01', 19.00);
+
+-- Sessions
+INSERT INTO sessions (user_id, product, session_start, session_duration) VALUES
+(1, 'Stapler', '2025-07-01 10:00', 25),
+(1, 'Stapler', '2025-07-03 11:00', 35),
+(2, 'Stapler', '2025-07-02 09:30', 15),
+(3, 'Stapler', '2025-07-02 14:00', 40),
+(4, 'Stapler', '2025-07-04 16:00', 30),
+(7, 'Stapler', '2025-07-06 10:30', 20),
+(8, 'Stapler', '2025-07-07 12:00', 10),
+(5, 'Notepad', '2025-07-08 13:00', 60);
+
+-- Subscriptions
+INSERT INTO subscriptions (user_id, product, plan_type, start_date, expiry_date, cancelled_date, subscription_value) VALUES
+(1, 'Stapler',   'Single Item - Stapler',   '2025-01-01', '2025-12-31', NULL, 120.00),
+(2, 'Notepad',   'Single Item - Notepad',   '2025-02-01', '2025-08-01', '2025-07-15', 90.00),
+(3, 'Binder',    'Single Item - Binder',    '2025-03-01', '2026-02-28', NULL, 150.00),
+(4, 'Highlighter','Single Item - Highlighter','2025-04-01','2025-12-31', NULL, 80.00),
+(1, 'Stapler', 'All Tools', '2025-06-15', '2026-06-14', NULL, 500.00),  -- user 1 upgraded
+(3, 'Binder', 'All Tools', '2025-07-01', '2026-06-30', NULL, 520.00),  -- user 3 upgraded
+(5, 'Stapler', 'All Tools', '2024-09-01', '2025-08-31', '2025-08-31', 480.00), -- ended
+(7, 'Highlighter', 'All Tools', '2025-10-01', '2026-09-30', NULL, 510.00);
+
+-- Support tickets
+INSERT INTO support_tickets (ticket_id, product, created_at, priority, resolution_hours) VALUES
+(101, 'Stapler',       '2025-04-10 09:00:00', 'normal',    20),
+(102, 'Stapler',       '2025-05-11 10:00:00', 'escalated', 30),
+(103, 'Stapler',       '2025-06-12 11:00:00', 'normal',    10),
+(104, 'Notepad',       '2025-05-05 12:00:00', 'normal',    16),
+(105, 'Highlighter',   '2025-04-20 14:00:00', 'normal',    22),
+(106, 'Binder',        '2025-06-01 16:00:00', 'normal',    18),
+(107, 'Ballpoint Pen', '2025-05-15 10:00:00', 'normal',    14),
+(108, 'Stapler',       '2025-07-10 09:00:00', 'normal',    12),
+(109, 'Stapler',       '2025-08-11 10:00:00', 'normal',    26),
+(110, 'Stapler',       '2025-09-12 11:00:00', 'escalated', 40),
+(111, 'Stapler',       '2025-09-15 13:00:00', 'normal',    8),
+(112, 'Notepad',       '2025-07-05 12:00:00', 'normal',    18),
+(113, 'Notepad',       '2025-08-18 09:30:00', 'normal',    9),
+(114, 'Highlighter',   '2025-07-22 14:00:00', 'normal',    15),
+(115, 'Binder',        '2025-09-02 16:00:00', 'normal',    20),
+(116, 'Ballpoint Pen', '2025-08-25 10:00:00', 'normal',    12);
